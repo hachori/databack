@@ -2,14 +2,13 @@ import streamlit as st
 import yfinance as yf
 import plotly.express as px
 from datetime import datetime, timedelta
+import pandas as pd # pandas 라이브러리 추가
 
 def get_top_global_stocks():
     """
     일반적으로 글로벌 시가총액 상위에 있는 기업들의 티커를 반환합니다.
     (수동으로 선정되었으며, 실시간 시가총액 순위가 아님)
     """
-    # 실제 시가총액 Top 10은 변동이 심하므로, 일반적으로 상위에 랭크되는 기업들로 구성
-    # 필요에 따라 이 리스트를 수정할 수 있습니다.
     return {
         "Apple": "AAPL",
         "Microsoft": "MSFT",
@@ -20,20 +19,35 @@ def get_top_global_stocks():
         "Meta Platforms": "META",
         "Tesla": "TSLA",
         "Berkshire Hathaway B": "BRK-B",
-        "Eli Lilly and Company": "LLY", # 헬스케어 분야 대표
-        # "TSMC": "TSM", # 대만 기업 추가
-        # "Saudi Aramco": "2222.SR" # 사우디 아람코는 야후 파이낸스에서 심볼이 다를 수 있음
+        "Eli Lilly and Company": "LLY",
     }
 
 def fetch_stock_data(tickers, period="1y"):
     """
     야후 파이낸스에서 주식 데이터를 가져옵니다.
+    각 티커별로 'Adj Close' 데이터를 추출하여 하나의 데이터프레임으로 합칩니다.
     """
-    data = yf.download(list(tickers.values()), period=period, progress=False)
-    # 'Adj Close' 가격만 사용하고, 컬럼 이름을 티커 이름으로 변경
-    df = data['Adj Close']
-    df.columns = tickers.keys() # 티커 대신 회사 이름으로 컬럼 이름 변경
-    return df
+    all_adj_close_data = pd.DataFrame() # 빈 데이터프레임 생성
+
+    for company_name, ticker in tickers.items():
+        try:
+            # 개별 티커 데이터 다운로드
+            data = yf.download(ticker, period=period, progress=False)
+
+            if not data.empty and 'Adj Close' in data.columns:
+                # 'Adj Close' 컬럼만 추출하고 컬럼 이름을 회사 이름으로 변경
+                adj_close_series = data['Adj Close'].rename(company_name)
+                if all_adj_close_data.empty:
+                    all_adj_close_data = pd.DataFrame(adj_close_series)
+                else:
+                    all_adj_close_data = pd.merge(all_adj_close_data, adj_close_series,
+                                                  left_index=True, right_index=True, how='outer')
+            else:
+                st.warning(f"'{company_name}' ({ticker})의 'Adj Close' 데이터를 찾을 수 없거나 데이터가 비어있습니다.")
+        except Exception as e:
+            st.warning(f"'{company_name}' ({ticker}) 데이터를 불러오는 중 오류 발생: {e}")
+
+    return all_adj_close_data.sort_index() # 날짜 기준으로 정렬
 
 st.set_page_config(layout="wide")
 st.title("글로벌 시가총액 Top 기업 주식 변화 (지난 1년)")
@@ -56,8 +70,6 @@ with st.spinner('데이터를 불러오고 시각화하는 중입니다. 잠시�
 
         if not stock_data.empty:
             # Plotly를 사용하여 라인 차트 생성
-            # 데이터를 melt하여 'Date', 'Company', 'Price' 컬럼으로 만듭니다.
-            # Plotly Express는 wide-form 데이터도 잘 처리하지만, 명확한 라벨링을 위해 melt할 수 있습니다.
             df_melted = stock_data.reset_index().melt(id_vars=['Date'], var_name='Company', value_name='Price')
 
             fig = px.line(df_melted, x="Date", y="Price", color="Company",
@@ -79,7 +91,7 @@ with st.spinner('데이터를 불러오고 시각화하는 중입니다. 잠시�
             st.warning("주식 데이터를 가져오지 못했습니다. 티커를 확인하거나 잠시 후 다시 시도해 주세요.")
 
     except Exception as e:
-        st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
+        st.error(f"데이터를 불러오는 중 예상치 못한 오류가 발생했습니다: {e}")
         st.info("인터넷 연결을 확인하거나, 야후 파이낸스에서 해당 티커의 데이터를 제공하는지 확인해 주세요.")
 
 st.markdown(

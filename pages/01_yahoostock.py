@@ -2,7 +2,7 @@ import streamlit as st
 import yfinance as yf
 import plotly.express as px
 from datetime import datetime, timedelta
-import pandas as pd # pandas 라이브러리 추가
+import pandas as pd
 
 def get_top_global_stocks():
     """
@@ -27,27 +27,35 @@ def fetch_stock_data(tickers, period="1y"):
     야후 파이낸스에서 주식 데이터를 가져옵니다.
     각 티커별로 'Adj Close' 데이터를 추출하여 하나의 데이터프레임으로 합칩니다.
     """
-    all_adj_close_data = pd.DataFrame() # 빈 데이터프레임 생성
+    all_adj_close_data = pd.DataFrame()
 
     for company_name, ticker in tickers.items():
         try:
-            # 개별 티커 데이터 다운로드
-            data = yf.download(ticker, period=period, progress=False)
+            # 개별 티커 데이터 다운로드 시 auto_adjust=False 설정
+            # 이렇게 하면 'Adj Close' 컬럼이 명시적으로 존재합니다.
+            data = yf.download(ticker, period=period, progress=False, auto_adjust=False)
 
             if not data.empty and 'Adj Close' in data.columns:
-                # 'Adj Close' 컬럼만 추출하고 컬럼 이름을 회사 이름으로 변경
                 adj_close_series = data['Adj Close'].rename(company_name)
                 if all_adj_close_data.empty:
                     all_adj_close_data = pd.DataFrame(adj_close_series)
                 else:
                     all_adj_close_data = pd.merge(all_adj_close_data, adj_close_series,
                                                   left_index=True, right_index=True, how='outer')
+            elif not data.empty and 'Close' in data.columns: # 'Adj Close'가 없으면 'Close'를 시도 (이미 조정되었을 가능성)
+                st.warning(f"'{company_name}' ({ticker})의 'Adj Close' 데이터를 찾을 수 없어 'Close' 데이터를 사용합니다. yfinance 버전을 확인해 보세요.")
+                adj_close_series = data['Close'].rename(company_name)
+                if all_adj_close_data.empty:
+                    all_adj_close_data = pd.DataFrame(adj_close_series)
+                else:
+                    all_adj_close_data = pd.merge(all_adj_close_data, adj_close_series,
+                                                  left_index=True, right_index=True, how='outer')
             else:
-                st.warning(f"'{company_name}' ({ticker})의 'Adj Close' 데이터를 찾을 수 없거나 데이터가 비어있습니다.")
+                st.warning(f"'{company_name}' ({ticker})의 주식 데이터를 가져오지 못했거나 'Adj Close'/'Close' 컬럼을 찾을 수 없습니다.")
         except Exception as e:
             st.warning(f"'{company_name}' ({ticker}) 데이터를 불러오는 중 오류 발생: {e}")
 
-    return all_adj_close_data.sort_index() # 날짜 기준으로 정렬
+    return all_adj_close_data.sort_index()
 
 st.set_page_config(layout="wide")
 st.title("글로벌 시가총액 Top 기업 주식 변화 (지난 1년)")
@@ -75,10 +83,10 @@ with st.spinner('데이터를 불러오고 시각화하는 중입니다. 잠시�
             fig = px.line(df_melted, x="Date", y="Price", color="Company",
                           title="글로벌 시가총액 상위 기업 주식 변화 (지난 1년)",
                           labels={"Price": "종가 (USD)"},
-                          hover_data={"Price": ":.2f"}) # 호버 시 가격 소수점 둘째 자리까지 표시
+                          hover_data={"Price": ":.2f"})
 
             fig.update_layout(
-                hovermode="x unified", # X축에 걸쳐 호버 정보를 통합 표시
+                hovermode="x unified",
                 xaxis_title="날짜",
                 yaxis_title="주가 (USD)",
                 legend_title="기업"
@@ -88,7 +96,7 @@ with st.spinner('데이터를 불러오고 시각화하는 중입니다. 잠시�
             st.dataframe(stock_data)
 
         else:
-            st.warning("주식 데이터를 가져오지 못했습니다. 티커를 확인하거나 잠시 후 다시 시도해 주세요.")
+            st.warning("주식 데이터를 성공적으로 가져온 기업이 없습니다. 티커를 확인하거나 잠시 후 다시 시도해 주세요.")
 
     except Exception as e:
         st.error(f"데이터를 불러오는 중 예상치 못한 오류가 발생했습니다: {e}")

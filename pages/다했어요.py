@@ -110,7 +110,7 @@ if 'show_name_input' not in st.session_state:
     st.session_state.show_name_input = False
 
 # --- 메인 타이틀 ---
-st.markdown("<h1 class='main-header'>✨ 숙제 다 했어요! 현황판 ✨</h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='main-header'>✨ 할일일 다 했어요! 현황판 ✨</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size: 1.2em; color: #555;'>오늘 할 일을 모두 마친 멋진 친구들을 만나보세요!</p>", unsafe_allow_html=True)
 st.markdown("---") # 구분선
 
@@ -142,7 +142,7 @@ with col2:
                     "name": name.strip(),
                     "timestamp": datetime.now()
                 })
-                st.success(f"🎉 **{name.strip()}** 친구, 정말 대단해요! 숙제를 완료했어요! 🎉")
+                st.success(f"🎉 **{name.strip()}** 친구, 정말 대단해요! 할일을 완료했어요! 🎉")
                 st.session_state.show_name_input = False # 입력 후 필드 숨기기
             else:
                 st.warning(f"앗, **{name.strip()}** 친구는 이미 완료했다고 표시했어요! 😊")
@@ -190,7 +190,7 @@ if st.session_state.completed_tasks:
     st.markdown(f"<p class='emoji-message'>오늘도 모두 멋진 하루였어요! {' '.join(emoji_message_parts)}</p>", unsafe_allow_html=True)
 
 else:
-    st.info("아직 숙제를 완료한 친구가 없어요. 첫 번째 친구가 되어보세요! 🚀")
+    st.info("아직 할일을 완료한 친구가 없어요. 첫 번째 친구가 되어보세요! 🚀")
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; font-size: 1.1em; color: #777;'>Made with ❤️ for awesome kids!</p>", unsafe_allow_html=True)

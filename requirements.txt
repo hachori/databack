@@ -3,3 +3,4 @@ folium
 koreanize_matplotlib
 streamlit_folium
 geopy
+yfinance

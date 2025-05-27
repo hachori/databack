@@ -110,7 +110,7 @@ if 'show_name_input' not in st.session_state:
     st.session_state.show_name_input = False
 
 # --- 메인 타이틀 ---
-st.markdown("<h1 class='main-header'>✨ 할일일 다 했어요! 현황판 ✨</h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='main-header'>✨ 할일 다 했어요! ✨</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size: 1.2em; color: #555;'>오늘 할 일을 모두 마친 멋진 친구들을 만나보세요!</p>", unsafe_allow_html=True)
 st.markdown("---") # 구분선
 

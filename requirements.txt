@@ -6,3 +6,4 @@ geopy
 yfinance
 openpyxl
 st-gsheets-connection
+gspread
